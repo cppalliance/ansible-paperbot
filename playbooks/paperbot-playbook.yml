@@ -1,0 +1,6 @@
+---
+- name: Install paperbot
+  hosts: newservers
+  become: true
+  roles:
+    - {role: 'cppalliance.paperbot'}

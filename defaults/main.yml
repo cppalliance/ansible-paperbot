@@ -1,0 +1,27 @@
+---
+paperbot_slack_bot_token: "ABC"
+paperbot_slack_signing_secret: "XYZ"
+paperbot_user: deploy
+paperbot_group: deploy
+paperbot_homedir: "/home/{{ paperbot_user }}"
+paperbot_website_name: "{{ inventory_hostname }}"
+paperbot_packages_prereqs1:
+  - nload
+  - htop
+  - locate
+  - apt-transport-https
+  - ca-certificates
+  - certbot
+  - yarn
+  - acl
+  - ssl-cert
+paperbot_packages:
+  - nginx
+  - libnginx-mod-http-passenger
+# This will be detected later, so the variable may be left as-is.  
+paperbot_letsencrypt_installed: "not-installed"
+paperbot_node_version: "14.13.1"
+
+passenger_debian_repo_key: '561F9B9CAC40B2F7'
+passenger_debian_repo_keyserver: 'hkp://keyserver.ubuntu.com:80'
+passenger_debian_repo: 'deb https://oss-binaries.phusionpassenger.com/apt/passenger {{ ansible_distribution_release }} main'

@@ -1,0 +1,121 @@
+---
+- name: Install required packages - prereqs
+  ansible.builtin.package:
+    name: "{{ paperbot_packages_prereqs1 }}"
+    state: present
+
+- name: Adding passenger repo key
+  ansible.builtin.apt_key:
+    keyserver: "{{ passenger_debian_repo_keyserver }}"
+    id: "{{ passenger_debian_repo_key }}"
+    state: present
+
+- name: Adding passenger repo
+  ansible.builtin.apt_repository:
+    repo: "{{ passenger_debian_repo }}"
+    state: present
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ paperbot_packages }}"
+    state: present
+    update_cache: true
+
+- name: Create user
+  ansible.builtin.user:
+    name: "{{ paperbot_user }}"
+    shell: /bin/bash
+    create_home: true
+
+- name: Install nvm  # noqa command-instead-of-module
+  ansible.builtin.shell: set -o pipefail && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  args:
+    chdir: "{{ paperbot_homedir }}"
+    creates: "{{ paperbot_homedir }}/.nvm"
+  become: true
+  become_user: "{{ paperbot_user }}"
+
+- name: Install node  # noqa command-instead-of-shell
+  ansible.builtin.shell: /bin/bash -c "source ~/.nvm/nvm.sh && nvm install {{ paperbot_node_version }} && nvm alias default {{ paperbot_node_version }} "
+  args:
+    chdir: "{{ paperbot_homedir }}"
+    creates: "{{ paperbot_homedir }}/.nvm/versions/node/v{{ paperbot_node_version }}"
+  become: true
+  become_user: "{{ paperbot_user }}"
+
+- name: Install yarn  # noqa command-instead-of-shell
+  ansible.builtin.shell: /bin/bash -c "source ~/.nvm/nvm.sh && npm install -g yarn"
+  args:
+    chdir: "{{ paperbot_homedir }}"
+    creates: "{{ paperbot_homedir }}/.nvm/versions/node/v{{ paperbot_node_version }}/lib/node_modules/yarn"
+  become: true
+  become_user: "{{ paperbot_user }}"
+
+- name: Install node modules  # noqa command-install-of-shell
+  ansible.builtin.shell: /bin/bash -c "source ~/.nvm/nvm.sh && yarn install"
+  args:
+    chdir: "{{ paperbot_homedir }}/paperbot"
+    creates: "{{ paperbot_homedir }}/paperbot/node_modules"
+  become: true
+  become_user: "{{ paperbot_user }}"
+
+- name: Checkout paperbot repo
+  ansible.builtin.git:
+    repo: 'https://github.com/cppalliance/paperbot'
+    dest: "{{ paperbot_homedir }}/paperbot"
+    version: master
+  become: true
+  become_user: "{{ paperbot_user }}"
+
+- name: Set SLACK_BOT_TOKEN
+  ansible.builtin.lineinfile:
+    path: "{{ paperbot_homedir }}/.profile"
+    regexp: '^export SLACK_BOT_TOKEN='
+    line: export SLACK_BOT_TOKEN={{ paperbot_slack_bot_token }}
+    owner: "{{ paperbot_user }}"
+    group: "{{ paperbot_group }}"
+    mode: "0644"
+
+- name: Set SLACK_SIGNING_SECRET
+  ansible.builtin.lineinfile:
+    path: "{{ paperbot_homedir }}/.profile"
+    regexp: '^export SLACK_SIGNING_SECRET='
+    line: export SLACK_SIGNING_SECRET={{ paperbot_slack_signing_secret }}
+    owner: "{{ paperbot_user }}"
+    group: "{{ paperbot_group }}"
+    mode: '0644'
+
+- name: Check if letsencrypt was already set up
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/renewal/{{ paperbot_website_name }}.conf"
+  register: stat_result
+
+- name: Record that result
+  ansible.builtin.set_fact:
+    paperbot_letsencrypt_installed: "installed"
+    tester: "blah"
+  when: stat_result.stat.exists
+
+- name: Remove default nginx vhost
+  notify: Restart nginx
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Install nginx vhost
+  notify: Restart nginx
+  ansible.builtin.template:
+    src: slackbot.j2
+    dest: /etc/nginx/sites-available/slackbot
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Enable nginx vhost
+  notify: Restart nginx
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/slackbot
+    dest: /etc/nginx/sites-enabled/slackbot
+    owner: root
+    group: root
+    state: link

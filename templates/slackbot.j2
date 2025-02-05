@@ -1,0 +1,46 @@
+server {
+    listen 80;
+    server_name {{ paperbot_website_name }};
+    error_log /var/log/nginx/error-slackbot.log;
+    access_log /var/log/nginx/access-slackbot.log;
+    location '/.well-known/acme-challenge' {
+        default_type "text/plain";
+        root /var/www/letsencrypt;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name {{ inventory_hostname }};
+
+    error_log /var/log/nginx/error-slackbot.log;
+    access_log /var/log/nginx/access-slackbot.log;
+
+    # Tell Nginx and Passenger where your app's 'public' directory is
+    root /home/{{ paperbot_user }}/paperbot/public;
+
+{% if paperbot_letsencrypt_installed == "installed" %}
+    ssl_certificate /etc/letsencrypt/live/{{ paperbot_website_name }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ paperbot_website_name }}/privkey.pem;
+    # ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    # ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+{% else %}
+    # ssl_certificate /etc/letsencrypt/live/{{ paperbot_website_name }}/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/{{ paperbot_website_name }}/privkey.pem;
+    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+{% endif %}
+
+    # Turn on Passenger
+    passenger_enabled on;
+    # Tell Passenger that your app is a Node.js app
+    passenger_app_type node;
+    passenger_startup_file index.js;
+    passenger_nodejs /home/{{ paperbot_user }}/.nvm/versions/node/v14.13.1/bin/node;
+}
+
