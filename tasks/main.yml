@@ -119,3 +119,11 @@
     owner: root
     group: root
     state: link
+
+- name: Create a letsencrypt dir
+  ansible.builtin.file:
+    path: /var/www/letsencrypt
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root

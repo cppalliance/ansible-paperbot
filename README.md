@@ -56,4 +56,16 @@ as well as the file -
 /etc/nginx/conf.d/mod-http-passenger.conf
 ```
 
+## Let's Encrypt TLS Certificates
+
+The role does not currently install certificates, however you should add them.  
+
+After installing paperbot, run:   
+
+```
+certbot certonly
+```
+
+Install certs. Then run ansible a second time which will adjust the nginx vhost to use the new certs.  
+
 

@@ -18,7 +18,7 @@ paperbot_packages_prereqs1:
 paperbot_packages:
   - nginx
   - libnginx-mod-http-passenger
-# This will be detected later, so the variable may be left as-is.  
+# This will be detected later, so the variable may be left as-is.
 paperbot_letsencrypt_installed: "not-installed"
 paperbot_node_version: "14.13.1"
 
