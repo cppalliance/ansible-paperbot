@@ -20,8 +20,9 @@ To find the 'signing secret', go to Basic Information -> App Credentials -> Sign
 
 Other important configuration:   
 
-In the slack app settings, enable Event Subscriptions. Set the Request URL.  
-https://api.slack.com/apps/_app_id_/event-subscriptions
+In the slack app settings, enable Event Subscriptions.  
+https://api.slack.com/apps/_app_id_/event-subscriptions  
+Set the Request URL (https://www.example.com/slack/events)  
 
 Assuming an app name such as "apaperbot" the permission scope of the app should (at least) be something similar to this when creating the app in slack:    
 
